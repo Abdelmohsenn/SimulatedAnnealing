@@ -17,7 +17,7 @@
 using namespace std;
 using namespace std::chrono;
 
-
+//Classes and Structs
 class cost {
 public:
     int initialcost=1;
@@ -59,15 +59,19 @@ struct Netlist{
 //
 //};
 
+//Funcs
 void Parsing_and_Assigning(string , Netlist&);
 void InitialGrid(Netlist&);
+void RandomInitialPlacement();
 void SimulatedAnnealing();
+
+//Global Vars
 vector <vector<cells>> nets;
 vector<vector<int>> grid;
 
 void Parsing_and_Assigning(string file, Netlist& Read) {
     
-    int numCells = 0, NumComp = 0, numRows = 0, numColumns = 0 , index = 0, netword = -1;;
+    int numCells = 0, NumComp = 0, numRows = 0, numColumns = 0, netword;
     vector <cells> net;
     cells Cell;
     string line,netline;
@@ -75,10 +79,11 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     readfile.open(file);
     
     if (!readfile.is_open()) { //egde case
-        cout << "Failed to open the file\n";
+        cerr << "Failed to open the file\n";
         return;
     } // parsing first line
     if (getline(readfile, line)) {
+        
         istringstream ss(line);
         
         if ((ss >> numCells >> NumComp >> numRows >> numColumns) && ss.eof()) {
@@ -89,31 +94,44 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
             Read.NumberOfCells = numCells;
             Read.NumberOfComponents = NumComp;
             
-        } else { //egde cas
-            clog << "Failed Line: Incorrect number of components or invalid data format\n";
+        } else { //egde case
+            cerr << "Failed Line: Incorrect number of components or invalid data format in NetlistInfo Line\n";
             return;
         }
-    } else { //egde cas
-        clog << "Failed to read line from the file\n";
+    } else { //egde case
+        cerr << "Failed to read line from the file\n";
         return;
     }
     
     // parsing the rest of the file
-    
+    int lineNumber = 2; // starting point
     while (getline(readfile, netline)) {
+        
         istringstream Netparser(netline);
-        Netparser >> NumComp; // each number of component in each net
+        if (!(Netparser >> NumComp)) {
+            cerr << "Error parsing line " << lineNumber << ": Missing number of components\n";
+            return; // exit if the file format is not correct
+        }
+        
         while (Netparser >> netword) {
             Cell.identifier = netword;
             net.push_back(Cell);
-            //            cout << netword << " ";
         }
-        nets.push_back(net);
-        net.clear();
-        // flag for a new net.
-        //        cout << endl;
         
+        // Check if the number of components matches the expected number
+        
+        if (net.size() != NumComp) {
+            cerr << "Error parsing line " << lineNumber << ": Number of components does not match\n";
+            return; // exit if the file format is not correct
+        }
+        //        cout<<"Net size here = > "<<net.size()<<"\n";
+        nets.push_back(net);
+        net.clear(); //resetting
+        lineNumber++;
     }
+    
+    readfile.close();
+    
     cout<<endl;
     cout<<endl;
     cout<<"Net of nets: \n";
@@ -128,6 +146,11 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     InitialGrid(Read);
     
 }
+
+void RandomInitialPlacement(){
+    
+    
+}
 void SimulatedAnnealing(){
     
     
@@ -135,7 +158,6 @@ void SimulatedAnnealing(){
 }
 
 void InitialGrid(Netlist& Read){
-    
     cout << "---------------------------------------------------------------\n";
     grid.resize(Read.row);
     for(int i = 0; i < grid.size(); i++) {
@@ -146,14 +168,13 @@ void InitialGrid(Netlist& Read){
             cout << grid[i][j] << " "; // Print the value of each cell
         }
         cout<<endl;
-    
     }
-    cout << "---------------------------------------------------------------\n";
-
+    cout << "---------------------------------------------------------------";
 }
 
 
 int main(){
+    
     Temperature obj;
     Netlist obj1;
     string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d0.txt";
