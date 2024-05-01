@@ -11,7 +11,12 @@
 #include <cmath>
 #include <fstream>
 #include <sstream>
+#include <map>
+#include <chrono> // timing library
+
 using namespace std;
+using namespace std::chrono;
+
 
 class cost {
 public:
@@ -38,12 +43,13 @@ struct cells{
     
 };
 
-struct Counts{
+struct Netlist{
     int NumberOfCells;
     int NumberOfComponents;
     int row;
     int column;
 };
+
 
 //struct netlists{
 //
@@ -53,20 +59,15 @@ struct Counts{
 //
 //};
 
-void Grid(Counts& Read){
-    
-    for (int i = 0; i<Read.row; i++) {
-        for (int j = 0; j<Read.column; j++) {
-            cout<< " -- ";
-        }
-        cout<<endl;
-    }
-}
+void Parsing_and_Assigning(string , Netlist&);
+void InitialGrid(Netlist&);
+void SimulatedAnnealing();
 vector <vector<cells>> nets;
+vector<vector<int>> grid;
 
-void Parsing_and_Assigning(string file, Counts& Read) {
-    int numCells = 0, NumComp = 0, numRows = 0, numColumns = 0 , i=1, netword = -1;;
-    Temperature x;
+void Parsing_and_Assigning(string file, Netlist& Read) {
+    
+    int numCells = 0, NumComp = 0, numRows = 0, numColumns = 0 , index = 0, netword = -1;;
     vector <cells> net;
     cells Cell;
     string line,netline;
@@ -88,11 +89,11 @@ void Parsing_and_Assigning(string file, Counts& Read) {
             Read.NumberOfCells = numCells;
             Read.NumberOfComponents = NumComp;
             
-        } else {
+        } else { //egde cas
             clog << "Failed Line: Incorrect number of components or invalid data format\n";
             return;
         }
-    } else {
+    } else { //egde cas
         clog << "Failed to read line from the file\n";
         return;
     }
@@ -116,21 +117,46 @@ void Parsing_and_Assigning(string file, Counts& Read) {
     cout<<endl;
     cout<<endl;
     cout<<"Net of nets: \n";
-    for (const auto& net : nets) {
-        for (const auto& cell : net) {
+    for (auto net : nets) {
+        for (auto cell : net) {
             cout << cell.identifier << " ";
         }
         cout << endl;
     }
-    Grid(Read);
+    
+    //    cout<< " da eh ? => " << nets[2][2].identifier; // testing what value this is by index
+    InitialGrid(Read);
+    
+}
+void SimulatedAnnealing(){
+    
+    
     
 }
 
+void InitialGrid(Netlist& Read){
+    
+    cout << "---------------------------------------------------------------\n";
+    grid.resize(Read.row);
+    for(int i = 0; i < grid.size(); i++) {
+        grid[i].resize(Read.column, -1);
+    }
+    for (int i = 0; i<Read.row; i++) {
+        for (int j = 0; j<Read.column; j++) {
+            cout << grid[i][j] << " "; // Print the value of each cell
+        }
+        cout<<endl;
+    
+    }
+    cout << "---------------------------------------------------------------\n";
+
+}
+
+
 int main(){
     Temperature obj;
-    Counts obj1;
+    Netlist obj1;
     string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d0.txt";
-    
     Parsing_and_Assigning(FileName,obj1);
     
 }
