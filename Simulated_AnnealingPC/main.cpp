@@ -144,11 +144,14 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     
     //    cout<< " da eh ? => " << nets[2][2].identifier; // testing what value this is by index
     InitialGrid(Read);
+    RandomInitialPlacement();
+    InitialGrid(Read);
     
 }
 
 void RandomInitialPlacement(){
     
+//    grid[1][1]=nets[2][2].identifier;
     
 }
 void SimulatedAnnealing(){
