@@ -13,6 +13,7 @@
 #include <sstream>
 #include <map>
 #include <chrono> // timing library
+#include <unordered_set>
 
 using namespace std;
 using namespace std::chrono;
@@ -62,7 +63,8 @@ struct Netlist{
 //Funcs
 void Parsing_and_Assigning(string , Netlist&);
 void InitialGrid(Netlist&);
-void RandomInitialPlacement();
+vector<int> unique_cells(const vector<vector<cells>>&);
+void RandomInitialPlacement(vector<int >,Netlist );
 void SimulatedAnnealing();
 
 //Global Vars
@@ -134,24 +136,59 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     
     cout<<endl;
     cout<<endl;
-    cout<<"Net of nets: \n";
+    cout<<"Nets of nets: \n";
     for (auto net : nets) {
         for (auto cell : net) {
             cout << cell.identifier << " ";
         }
         cout << endl;
     }
-    
+    vector<int> unique=unique_cells(nets);// unique cells
+    for(int i=0;i<unique.size();i++){
+        cout<<unique[i]<<" ";
+    }
+    cout<<endl;
     //    cout<< " da eh ? => " << nets[2][2].identifier; // testing what value this is by index
+   
     InitialGrid(Read);
-    RandomInitialPlacement();
+    RandomInitialPlacement(unique,Read);
     InitialGrid(Read);
     
 }
+vector<int> unique_cells(const vector<vector<cells>>& nets) {
+    unordered_set<int> unique_cell_vec;
+    for (const auto& net : nets) {
+        for (const auto& cell : net) {
+            unique_cell_vec.insert(cell.identifier);
+        }
+    }
+    vector<int> unique_cell_vecVector(unique_cell_vec.begin(), unique_cell_vec.end());
+    return unique_cell_vecVector;
+}
 
-void RandomInitialPlacement(){
+void RandomInitialPlacement(vector<int >unique,Netlist Read){
+    int counter=0;
     
-//    grid[1][1]=nets[2][2].identifier;
+    
+     for (int i = 0; i<Read.row; i++) {
+        
+        for (int j = 0; j<Read.column; j++) {
+            int random=rand()%2;
+            if(random){
+            grid[i][j] =unique[counter]; 
+            counter++;
+            }
+            else if((Read.column*Read.row)- (i*Read.column+j)<=unique.size()-counter ){/*fill grid when the left spaces are less or equal
+                                                                                        to remaing cells to be inserted */
+                 grid[i][j] =unique[counter]; 
+                 counter++;
+            }
+            
+        }
+     
+    }
+
+
     
 }
 void SimulatedAnnealing(){
@@ -167,6 +204,7 @@ void InitialGrid(Netlist& Read){
         grid[i].resize(Read.column, -1);
     }
     for (int i = 0; i<Read.row; i++) {
+        
         for (int j = 0; j<Read.column; j++) {
             cout << grid[i][j] << " "; // Print the value of each cell
         }
@@ -180,8 +218,9 @@ int main(){
     
     Temperature obj;
     Netlist obj1;
-    string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d0.txt";
+    string FileName = "t1.txt";
     Parsing_and_Assigning(FileName,obj1);
+    
     
 }
 
