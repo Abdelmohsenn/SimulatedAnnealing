@@ -23,6 +23,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C97B39072BE40FD100DE31C6 /* CImg.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = CImg.h; path = ../../CImg.h; sourceTree = "<group>"; };
 		C9F84D7C2BE163BD001D0B5F /* Simulated_AnnealingPC */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = Simulated_AnnealingPC; sourceTree = BUILT_PRODUCTS_DIR; };
 		C9F84D7F2BE163BD001D0B5F /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -57,6 +58,7 @@
 		C9F84D7E2BE163BD001D0B5F /* Simulated_AnnealingPC */ = {
 			isa = PBXGroup;
 			children = (
+				C97B39072BE40FD100DE31C6 /* CImg.h */,
 				C9F84D7F2BE163BD001D0B5F /* main.cpp */,
 			);
 			path = Simulated_AnnealingPC;
