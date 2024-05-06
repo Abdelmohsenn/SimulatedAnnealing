@@ -75,7 +75,7 @@ struct Netlist{
 
 //Funcs
 void Parsing_and_Assigning(string , Netlist&);
-void InitialGrid(Netlist&);
+void InitialGrid(Netlist&,int);
 vector<int> unique_cells(const vector<vector<cells>>&);
 void RandomInitialPlacement(vector<int >,Netlist );
 void SimulatedAnnealing();
@@ -103,7 +103,7 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
         istringstream ss(line);
         
         if ((ss >> numCells >> NumComp >> numRows >> numColumns) && ss.eof()) {
-            cout << numCells << " " << NumComp << " " << numRows << " " << numColumns << endl;
+          //  cout << numCells << " " << NumComp << " " << numRows << " " << numColumns << endl;
             
             Read.row = numRows;
             Read.column = numColumns;
@@ -148,21 +148,20 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     
     readfile.close();
     
-    cout<<endl;
-    cout<<endl;
+   
    
     vector<int> unique=unique_cells(nets);// unique cells
-    for(int i=0;i<unique.size();i++){
+   /* for(int i=0;i<unique.size();i++){
         cout<<unique[i]<<" ";
-    }
-    cout<<endl;
+    }*/
+    //cout<<endl;
     //    cout<< " da eh ? => " << nets[2][2].identifier; // testing what value this is by index
     
-    InitialGrid(Read);
+    InitialGrid(Read,0);
     RandomInitialPlacement(unique,Read);
-    cout << "---------------------------------------------------------------\n";
-    cout<<"Grid after Random Placement: \n";
-    InitialGrid(Read);
+   // cout << "---------------------------------------------------------------\n";
+    cout<<endl<<"Grid after Random Placement: \n";
+    InitialGrid(Read,1);
     
 }
 void print_cell_cord(vector<cells> cell_vec){
@@ -286,25 +285,37 @@ void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
 
 void RandomInitialPlacement(vector<int >unique,Netlist Read){
     int counter=0;
-    
-    
+    int sze=unique.size();
+     minstd_rand rng(time(0));
+   // uniform_int_distribution<int> rndm(0, unique.size()-1);
+     uniform_int_distribution<int> zno(0, 1);
+
     for (int i = 0; i<Read.row; i++) {
         
         for (int j = 0; j<Read.column; j++) {
+            uniform_int_distribution<int> rndm(0, unique.size()-1);
             cells cell_temp;
-            int random=rand()%2;
+            int random=zno(rng);
             if(random){
-                grid[i][j] =unique[counter];
-                cell_temp.identifier=unique[counter];
+                int rd=rndm(rng);
+                grid[i][j] =unique[rd];
+                cell_temp.identifier=unique[rd];
+                 unique.erase(unique.begin() + rd);
+               // grid[i][j] =unique[counter];
+              //  cell_temp.identifier=unique[counter];
                 cell_temp.xmargin=i;
                 cell_temp.ymargin=j;
                 cell_cord.push_back(cell_temp);
                 counter++;
             }
-            else if((Read.column*Read.row)- (i*Read.column+j)<=unique.size()-counter ){/*fill grid when the left spaces are less or equal
+            else if((Read.column*Read.row)- (i*Read.column+j)<=sze-counter ){/*fill grid when the left spaces are less or equal
                                                                                         to remaing cells to be inserted */
-                grid[i][j] =unique[counter];
-                cell_temp.identifier=unique[counter];
+                 int rd=rndm(rng);
+                grid[i][j] =unique[rd];
+                cell_temp.identifier=unique[rd];
+                 unique.erase(unique.begin() + rd);
+               // grid[i][j] =unique[counter];
+              //  cell_temp.identifier=unique[counter];
                 cell_temp.xmargin=i;
                 cell_temp.ymargin=j;
                 cell_cord.push_back(cell_temp);
@@ -317,7 +328,7 @@ void RandomInitialPlacement(vector<int >unique,Netlist Read){
     equate_net_cord(nets,cell_cord);
      get_cost(nets);
      get_cost(cell_cord);
-      cout<<endl<<"Nets of nets: \n";
+    /*  cout<<endl<<"Nets of nets: \n";
       int ci=0;
     for (auto net : nets) {
         cout<<"NET "<<ci<<" ";
@@ -334,7 +345,7 @@ void RandomInitialPlacement(vector<int >unique,Netlist Read){
             cout<<cell_cord[i].connections[j]<<" , ";
         }
         cout<<endl;
-    }
+    }*/
  
     
     
@@ -447,23 +458,45 @@ void simulate_annealing(int intial_wire_lenght,Netlist NL){
     
 }
 
-void InitialGrid(Netlist& Read){
+void InitialGrid(Netlist& Read,int indc){
     cout << "---------------------------------------------------------------\n";
     grid.resize(Read.row);
     for(int i = 0; i < grid.size(); i++) {
         grid[i].resize(Read.column, -1);
     }
+    if(!indc){
     for (int i = 0; i<Read.row; i++) {
         
         for (int j = 0; j<Read.column; j++) {
             if (grid[i][j] == -1) {
-                cout << setw(4)<<"-"<< " "; // Print the empty cells
+               // cout << setw(4)<<"-"<< " "; // Print the empty cells
+                 cout << setw(4)<<"1"<< " "; 
                 
-            } else
-                cout << setw(4)<<grid[i][j] << " "; // Print the value of each cell
+            } else{
+                //cout << setw(4)<<grid[i][j] << " "; // Print the value of each cell
+                 cout << setw(4)<<"0"<< " "; 
+            }
         }
         cout<<endl;
     }
+  }
+  else{
+     for (int i = 0; i<Read.row; i++) {
+        
+        for (int j = 0; j<Read.column; j++) {
+            if (grid[i][j] == -1) {
+               // cout << setw(4)<<"-"<< " "; // Print the empty cells
+                 cout << setw(4)<<"--"<< " "; 
+                
+            } else{
+                cout << setw(4)<<grid[i][j] << " "; // Print the value of each cell
+               //  cout << setw(4)<<"0"<< " "; 
+            }
+        }
+        cout<<endl;
+    }
+
+  }
     cout << "---------------------------------------------------------------";
 }
 
@@ -473,24 +506,28 @@ int main(){
    // Temperature obj;
     Netlist obj1;
     string FileName = "t1.txt";
+    auto start = steady_clock::now();
     Parsing_and_Assigning(FileName,obj1);
     
     int intial_wire_lenght=get_tot_length();
     cout<<"\nTotal Wire Length is " <<intial_wire_lenght<<endl;// outputting the wire length
 
    simulate_annealing(intial_wire_lenght,obj1);
-   int final_wire_lenght=get_tot_length();
-   InitialGrid(obj1);
+   auto end=steady_clock::now();
+    int final_wire_lenght=get_tot_length();
+   InitialGrid(obj1,1);
    cout<<"\nTotal Wire Length is " << final_wire_lenght<<endl;
+   auto delta_time= duration_cast<milliseconds>(end-start);
+   cout<<"Time Taken: "<<delta_time.count()/1000.0<<" seconds"<<endl;
     
-   cout<<endl<<"Cells and their net connections: \n";
+  /* cout<<endl<<"Cells and their net connections: \n";
     for(int i=0;i<cell_cord.size();i++){
         cout<<cell_cord[i].identifier<<"("<<cell_cord[i].xmargin<<","<<cell_cord[i].ymargin<<") connections: ";
         for(int j=0;j<cell_cord[i].connections.size();j++){
             cout<<cell_cord[i].connections[j]<<" , ";
         }
         cout<<endl;
-    }
+    }*/
 }
 
 
