@@ -73,14 +73,6 @@ struct Netlist{
 };
 
 
-//struct netlists{
-//
-//    int countofcomp=-1;
-//    vector <cells> cell;
-//
-//
-//};
-
 //Funcs
 void Parsing_and_Assigning(string , Netlist&);
 void InitialGrid(Netlist&);
@@ -322,17 +314,7 @@ void RandomInitialPlacement(vector<int >unique,Netlist Read){
         }
         
     }
-    
-    // print_cell_cord(cell_cord);
     equate_net_cord(nets,cell_cord);
-    //nets are setup randomly
-    //add to cell net_connec
-   
-    /*   for(int i=0;i<nets.size();i++){
-     for(int j=0;j<nets[i].size();j++){
-     cout<<endl<<nets[i][j].identifier<<" "<<nets[i][j].xmargin<<" "<<nets[i][j].ymargin<<endl;
-     }
-     }*/
      get_cost(nets);
      get_cost(cell_cord);
       cout<<endl<<"Nets of nets: \n";
@@ -353,22 +335,9 @@ void RandomInitialPlacement(vector<int >unique,Netlist Read){
         }
         cout<<endl;
     }
-    /*vector<int> intial_cost=get_cost(nets);
-    cout<<endl<<"Initial Cost"<<endl;
-    for(int i=0;i<intial_cost.size();i++){
-        cout<<intial_cost[i]<<endl;
-    }*/
+ 
     
     
-}
-
-int ComputeTotalWireLength(){
-    int TotalWireLength=0;
-    
-    for (int i = 0; i<cost.size(); i++) {
-        TotalWireLength+=cost[i];
-    }
-    return TotalWireLength;
 }
 int get_rand_int(int min,int max){
    random_device rd;
@@ -393,10 +362,9 @@ void swap_cells(cells c1,cells c2){
         cell_cord[i1].ymargin=c2.ymargin;
         cell_cord[i2].xmargin=c1.xmargin;
         cell_cord[i2].ymargin=c1.ymargin;
-      //  cout<<"XXXX"<<endl;
         get_cost(cell_cord);
         grid[c1.xmargin][c1.ymargin]=c2.identifier;
-         grid[c2.xmargin][c2.ymargin]=c1.identifier;
+        grid[c2.xmargin][c2.ymargin]=c1.identifier;
          
     }
     else if(c1.identifier>=0&&c1.identifier<cell_cord.size()&&c2.identifier==-1){
@@ -404,20 +372,18 @@ void swap_cells(cells c1,cells c2){
          int i1=get_identfier_index(cell_cord,c1.identifier);
         cell_cord[i1].xmargin=c2.xmargin;
         cell_cord[i1].ymargin=c2.ymargin;
-    //    cout<<"000000"<<endl;
          get_cost(cell_cord);
-             grid[c1.xmargin][c1.ymargin]=c2.identifier;
-             grid[c2.xmargin][c2.ymargin]=c1.identifier; 
+         grid[c1.xmargin][c1.ymargin]=c2.identifier;
+         grid[c2.xmargin][c2.ymargin]=c1.identifier; 
     }
     else if(c2.identifier>=0&&c2.identifier<cell_cord.size()&&c1.identifier==-1){
            
         int i2=get_identfier_index(cell_cord,c2.identifier);
         cell_cord[i2].xmargin=c1.xmargin;
         cell_cord[i2].ymargin=c1.ymargin;
-    //    cout<<"2222222222"<<endl;
-       get_cost(cell_cord);
-             grid[c1.xmargin][c1.ymargin]=c2.identifier;
-             grid[c2.xmargin][c2.ymargin]=c1.identifier; 
+        get_cost(cell_cord);
+        grid[c1.xmargin][c1.ymargin]=c2.identifier;
+        grid[c2.xmargin][c2.ymargin]=c1.identifier; 
     }
 
 }
@@ -430,20 +396,16 @@ void simulate_annealing(int intial_wire_lenght,Netlist NL){
     int cell_x1,cell_x2,cell_y1,cell_y2;
     int HPWL_1,HPWL_2,HPWL_diff;
     int N_moves=20*cell_cord.size();
-   //  Temperature T(intial_wire_lenght,nets.size());
-      double initialTemperature = 500*intial_wire_lenght;
-    double finalTemperature = 0.000005*intial_wire_lenght/nets.size();
-   //  double curr_temp=T.initialTemp;
-        double curr_temp=initialTemperature;
-
-     double prob;
-     double rand_doubl;
-       minstd_rand rng(time(0));
+    Temperature T(intial_wire_lenght,nets.size());
+    double curr_temp=T.initialTemp;
+    double prob;
+    double rand_doubl;
+    minstd_rand rng(time(0));
             uniform_int_distribution<int> intRowsRange(0, NL.row-1);
             uniform_int_distribution<int> intColumnsRange(0, NL.column-1);
             uniform_real_distribution<double> doubleDist(0, 1);
    
-     while(curr_temp>finalTemperature){
+     while(curr_temp>T.FinalTemp){
       
         for(int i=0;i<N_moves;i++){
             
@@ -459,15 +421,11 @@ void simulate_annealing(int intial_wire_lenght,Netlist NL){
          
             cell_identfier_1= grid[cell_x1][cell_y1];
             cell_identfier_2= grid[cell_x2][cell_y2];
-            
-         //   HPWL_1=ComputeTotalWireLength();
             HPWL_1=get_tot_length();
             cells c1(cell_identfier_1,cell_x1,cell_y1);
             cells c2(cell_identfier_2,cell_x2,cell_y2);
             swap_cells(c1,c2);
             HPWL_2=get_tot_length();
-          //  HPWL_2=ComputeTotalWireLength();
-         // cout<<"HPWL 2 "<<HPWL_2<<" HPWL_1 "<<HPWL_1<<endl;
             HPWL_diff=HPWL_2-HPWL_1;
           
             if(HPWL_diff>=0){
@@ -476,16 +434,15 @@ void simulate_annealing(int intial_wire_lenght,Netlist NL){
              rand_doubl=doubleDist(rng);
             
                 if(rand_doubl>prob){
-                //     cout<<"Rand "<<rand_doubl<<" Prob "<<prob<<endl;
                       cells c1(cell_identfier_1,cell_x2,cell_y2);
                       cells c2(cell_identfier_2,cell_x1,cell_y1);
-                    swap_cells(c1,c2);
+                      swap_cells(c1,c2);
                   
                 }
             }
 
         }
-        curr_temp=0.95*curr_temp;
+        curr_temp*=0.95;
      }
     
 }
@@ -517,9 +474,9 @@ int main(){
     Netlist obj1;
     string FileName = "t1.txt";
     Parsing_and_Assigning(FileName,obj1);
-    int intial_wire_lenght=ComputeTotalWireLength();
-    int cost2=get_tot_length();
-    cout<<"\nTotal Wire Length is " << intial_wire_lenght<<" COST 2 "<<cost2<<endl;// outputting the wire length
+    
+    int intial_wire_lenght=get_tot_length();
+    cout<<"\nTotal Wire Length is " <<intial_wire_lenght<<endl;// outputting the wire length
 
    simulate_annealing(intial_wire_lenght,obj1);
    int final_wire_lenght=get_tot_length();
