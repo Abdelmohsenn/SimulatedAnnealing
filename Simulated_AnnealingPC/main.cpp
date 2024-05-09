@@ -27,15 +27,18 @@ using namespace std;
 using namespace std::chrono;
 
 
+
 //Classes and Structs
 struct Cost {
-    int tot_len;
-    int x_min;
-    int x_max;
-    int y_min;
-    int y_max;
+    // int_max for faster
+    int tot_len = INT_MAX;
+    int x_min = INT_MAX;
+    int x_max = INT_MAX;
+    int y_min = INT_MAX;
+    int y_max = INT_MAX;
     Cost():x_max(-1),x_min(-1),y_min(-1),y_max(-1),tot_len(0){};
 };
+
 
 class Temperature {
 public:
@@ -54,9 +57,9 @@ public:
 struct cells{
     
     int identifier;
-    int ymargin;
-    int xmargin;
-    vector<int> connections;
+    int ymargin = INT_MAX;
+    int xmargin = INT_MAX;
+    vector <int> connections;
     cells() : identifier(-1), ymargin(0), xmargin(0), connections() {};
     cells(int i,int x, int y){
         identifier=i;
@@ -71,6 +74,7 @@ struct Netlist{
     int row;
     int column;
 };
+
 
 
 //Funcs
@@ -109,7 +113,7 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
             Read.column = numColumns;
             Read.NumberOfCells = numCells;
             Read.NumberOfComponents = NumComp;
-            
+  
         } else { //egde case
             cerr << "Failed Line: Incorrect number of components or invalid data format in NetlistInfo Line\n";
             return;
@@ -149,7 +153,6 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     readfile.close();
     
    
-   
     vector<int> unique=unique_cells(nets);// unique cells
    /* for(int i=0;i<unique.size();i++){
         cout<<unique[i]<<" ";
@@ -164,6 +167,7 @@ void Parsing_and_Assigning(string file, Netlist& Read) {
     InitialGrid(Read,1);
     
 }
+
 void print_cell_cord(vector<cells> cell_vec){
     cout<<endl<<"Cells Coordinates";
     for(int i=0;i<cell_vec.size();i++){
@@ -197,18 +201,46 @@ vector<int> unique_cells(const vector<vector<cells>>& nets) {
     return unique_cell_vecVector;
 }
 vector<int> cost; // Changed it to a global variable to calculate the total wire length
-vector<Cost> cost_new;
+vector <Cost> cost_new; // vector
 
-//vector<int> 
+//vector<int>
 int get_tot_length(){
     int tot=0;
     for(int i=0;i<cost_new.size();i++){
-        tot+=cost_new[i].tot_len;
+        tot += cost_new[i].tot_len;
     }
     return tot;
-
     
 }
+// new cost function with faster execution, using the global cord vector.
+void get_cost_new() {
+    cost_new.clear();
+    cost_new.resize(nets.size());
+
+    for (const auto& cell : cell_cord) {
+        for (const int& conn_idx : cell.connections) {
+            auto& cost = cost_new[conn_idx];
+            if (cost.x_max == -1) {
+                cost.x_max = cost.x_min = cell.xmargin;
+                cost.y_max = cost.y_min = cell.ymargin;
+            } else {
+                
+                if (cell.xmargin < cost.x_min) cost.x_min = cell.xmargin;
+                if (cell.xmargin > cost.x_max) cost.x_max = cell.xmargin;
+
+                if (cell.ymargin < cost.y_min) cost.y_min = cell.ymargin;
+                if (cell.ymargin > cost.y_max) cost.y_max = cell.ymargin;
+            }
+        }
+    }
+
+    for (auto& cost : cost_new) {
+            cost.tot_len = (cost.x_max - cost.x_min) + (cost.y_max - cost.y_min);
+        
+    }
+}
+
+int c=0;
 void get_cost(vector<cells> cell_cordn){
     cost_new.clear();
     cost_new.resize(nets.size());
@@ -241,36 +273,7 @@ void get_cost(vector<cells> cell_cordn){
         cost_new[i].tot_len=(cost_new[i].x_max-cost_new[i].x_min)+(cost_new[i].y_max-cost_new[i].y_min);
     }
 }
-void get_cost(vector<vector<cells>> nets_vec){
 
-     cost.clear();
-    
-    for(int i=0;i<nets_vec.size();i++){
-        
-        int x_min= nets_vec[i][0].xmargin;
-        int y_min=nets_vec[i][0].ymargin;
-        int x_max=nets_vec[i][0].xmargin;
-        int y_max=nets_vec[i][0].ymargin;
-        
-        for(int j=0;j<nets_vec[i].size();j++){
-            if(nets_vec[i][j].xmargin<x_min){
-                x_min=nets_vec[i][j].xmargin;
-            }
-            else if(nets_vec[i][j].xmargin>x_max){
-                x_max=nets_vec[i][j].xmargin;
-            }
-            if(nets_vec[i][j].ymargin<y_min){
-                y_min=nets_vec[i][j].ymargin;
-            }
-            else if(nets_vec[i][j].ymargin>y_max){
-                y_max=nets_vec[i][j].ymargin;
-            }
-        }
-        cost.push_back((x_max-x_min)+(y_max-y_min));
-        
-    }
-   // return cost;
-}
 void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
     for (size_t i = 0; i < nets_vec.size(); ++i) {
         
@@ -279,6 +282,7 @@ void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
             nets_vec[i][j].xmargin = coord[index].xmargin;
             nets_vec[i][j].ymargin = coord[index].ymargin;
             coord[index].connections.push_back(i);
+            
         }
     }
 }
@@ -326,8 +330,8 @@ void RandomInitialPlacement(vector<int >unique,Netlist Read){
         
     }
     equate_net_cord(nets,cell_cord);
-     get_cost(nets);
-     get_cost(cell_cord);
+//     get_cost(nets);
+    get_cost_new();
     /*  cout<<endl<<"Nets of nets: \n";
       int ci=0;
     for (auto net : nets) {
@@ -364,6 +368,8 @@ double get_rand_double(double min,double max){
    return dist(gen);
     
 }
+int counter =0;
+
 void swap_cells(cells c1,cells c2){
     
     if(c1.identifier>=0&&c1.identifier<cell_cord.size()&&c2.identifier>=0&&c2.identifier<cell_cord.size()&&c1.identifier!=c2.identifier){
@@ -373,7 +379,13 @@ void swap_cells(cells c1,cells c2){
         cell_cord[i1].ymargin=c2.ymargin;
         cell_cord[i2].xmargin=c1.xmargin;
         cell_cord[i2].ymargin=c1.ymargin;
-        get_cost(cell_cord);
+        
+        get_cost_new();
+        if (counter==0){
+            cout << i1 << " cooresponds => "<< cell_cord[i1].identifier<<endl;
+            cout << i2 << " cooresponds => "<< cell_cord[i2].identifier<<endl;
+            counter++;
+        }
         grid[c1.xmargin][c1.ymargin]=c2.identifier;
         grid[c2.xmargin][c2.ymargin]=c1.identifier;
          
@@ -383,7 +395,7 @@ void swap_cells(cells c1,cells c2){
          int i1=get_identfier_index(cell_cord,c1.identifier);
         cell_cord[i1].xmargin=c2.xmargin;
         cell_cord[i1].ymargin=c2.ymargin;
-         get_cost(cell_cord);
+        get_cost_new();
          grid[c1.xmargin][c1.ymargin]=c2.identifier;
          grid[c2.xmargin][c2.ymargin]=c1.identifier; 
     }
@@ -392,7 +404,7 @@ void swap_cells(cells c1,cells c2){
         int i2=get_identfier_index(cell_cord,c2.identifier);
         cell_cord[i2].xmargin=c1.xmargin;
         cell_cord[i2].ymargin=c1.ymargin;
-        get_cost(cell_cord);
+        get_cost_new();
         grid[c1.xmargin][c1.ymargin]=c2.identifier;
         grid[c2.xmargin][c2.ymargin]=c1.identifier; 
     }
@@ -402,24 +414,29 @@ void swap_cells(cells c1,cells c2){
 
 
 
-void simulate_annealing(int intial_wire_lenght,Netlist NL){
+void simulate_annealing(int intial_wire_lenght, Netlist NL){
     int cell_identfier_1,cell_identfier_2;
     int cell_x1,cell_x2,cell_y1,cell_y2;
     int HPWL_1,HPWL_2,HPWL_diff;
-    int N_moves=20*cell_cord.size();
+    int N_moves=cell_cord.size();
+    float coolingrate = 0.95;
+//    cout<<"cell numbers"<<cell_cord.size()<<"\n";
+
     Temperature T(intial_wire_lenght,nets.size());
     double curr_temp=T.initialTemp;
     double prob;
     double rand_doubl;
     minstd_rand rng(time(0));
+    
             uniform_int_distribution<int> intRowsRange(0, NL.row-1);
             uniform_int_distribution<int> intColumnsRange(0, NL.column-1);
             uniform_real_distribution<double> doubleDist(0, 1);
-   
+    int counter=0;
+    milliseconds t =milliseconds(0);
      while(curr_temp>T.FinalTemp){
       
-        for(int i=0;i<N_moves;i++){
-            
+        for(int i=0;i<N_moves; ++i){
+            counter++;
            /*cell_x1=get_rand_int(0,NL.row-1);
             cell_y1=get_rand_int(0,NL.column-1);
             cell_x2=get_rand_int(0,NL.row-1);
@@ -433,33 +450,44 @@ void simulate_annealing(int intial_wire_lenght,Netlist NL){
             cell_identfier_1= grid[cell_x1][cell_y1];
             cell_identfier_2= grid[cell_x2][cell_y2];
             HPWL_1=get_tot_length();
+            
             cells c1(cell_identfier_1,cell_x1,cell_y1);
             cells c2(cell_identfier_2,cell_x2,cell_y2);
             swap_cells(c1,c2);
+            
             HPWL_2=get_tot_length();
             HPWL_diff=HPWL_2-HPWL_1;
           
             if(HPWL_diff>=0){
                 prob=exp(-1*(double)HPWL_diff/curr_temp);
-              //  rand_doubl=get_rand_double(0,1);
-             rand_doubl=doubleDist(rng);
+//                rand_doubl=get_rand_double(0,1);
+              rand_doubl=doubleDist(rng);
             
                 if(rand_doubl>prob){
                       cells c1(cell_identfier_1,cell_x2,cell_y2);
                       cells c2(cell_identfier_2,cell_x1,cell_y1);
+//                    auto start = steady_clock::now();
                       swap_cells(c1,c2);
+//                    auto end = steady_clock::now();
+//                    auto delta_time= duration_cast<milliseconds>(end-start);
+//                    t=t+delta_time;
+//                    cout<<delta_time;
+                    
                   
                 }
             }
 
         }
-        curr_temp*=0.95;
+        curr_temp = curr_temp * coolingrate;
      }
     
+    cout<< " total number of iterations => "<<counter<<endl;
+    cout<< " total time taken in swap => "<<t<<endl;
+
 }
 
 void InitialGrid(Netlist& Read,int indc){
-    cout << "---------------------------------------------------------------\n";
+    cout << "--------------------------------------------------------------------------------------------------------------------------------\n";
     grid.resize(Read.row);
     for(int i = 0; i < grid.size(); i++) {
         grid[i].resize(Read.column, -1);
@@ -497,7 +525,7 @@ void InitialGrid(Netlist& Read,int indc){
     }
 
   }
-    cout << "---------------------------------------------------------------";
+    cout << "--------------------------------------------------------------------------------------------------------------------------------\n";
 }
 
 
@@ -505,13 +533,13 @@ int main(){
     
    // Temperature obj;
     Netlist obj1;
-    string FileName = "t1.txt";
-    auto start = steady_clock::now();
+    string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d0.txt";
     Parsing_and_Assigning(FileName,obj1);
     
     int intial_wire_lenght=get_tot_length();
     cout<<"\nTotal Wire Length is " <<intial_wire_lenght<<endl;// outputting the wire length
-
+    
+    auto start = steady_clock::now();
    simulate_annealing(intial_wire_lenght,obj1);
    auto end=steady_clock::now();
     int final_wire_lenght=get_tot_length();
@@ -520,14 +548,13 @@ int main(){
    auto delta_time= duration_cast<milliseconds>(end-start);
    cout<<"Time Taken: "<<delta_time.count()/1000.0<<" seconds"<<endl;
     
-  /* cout<<endl<<"Cells and their net connections: \n";
+   cout<<endl<<"Cells and their net connections: \n";
     for(int i=0;i<cell_cord.size();i++){
         cout<<cell_cord[i].identifier<<"("<<cell_cord[i].xmargin<<","<<cell_cord[i].ymargin<<") connections: ";
         for(int j=0;j<cell_cord[i].connections.size();j++){
             cout<<cell_cord[i].connections[j]<<" , ";
         }
         cout<<endl;
-    }*/
+    }
 }
-
 
