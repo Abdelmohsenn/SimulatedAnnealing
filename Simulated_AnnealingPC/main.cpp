@@ -41,12 +41,9 @@ struct Cost {
 
 struct Net {
     int id;
-    int minX, minY, maxX, maxY;
-    int minXCell, minYCell, maxXCell, maxYCell;
-    int HPWL;
     map<int, int> cells;  // Changed from vector<int> to map<int, int>
 
-    Net(int id) : id(id), minX(0), minY(0), maxX(0), maxY(0), HPWL(0) {}
+    Net(int id) : id(id) {}
 };
 
 
