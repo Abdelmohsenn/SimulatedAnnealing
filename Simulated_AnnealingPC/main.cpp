@@ -137,7 +137,7 @@ void Parsing_and_Assigning(string file) {
             net.push_back(Cell);
             net.back().connections.push_back(netIndex); // assigning the index of the current net to the cell
             CELLS[netword].connections.push_back(netIndex); // assigning each cell with all nets indexes
-            
+
             CELLS[netword].identifier=netword;
         }
 
@@ -149,7 +149,7 @@ void Parsing_and_Assigning(string file) {
         // Update NETS with the current net
         NETS.push_back(Net(netIndex));
         for (const cells& cell : net) {
-            NETS.back().cells[cell.identifier] = cell.identifier; // Using identifier as both key and value
+            NETS.back().cells[cell.identifier] = cell.identifier; // Map to map the net index to cell identifiers
         }
 
         netIndex++;
@@ -166,43 +166,26 @@ void Parsing_and_Assigning(string file) {
     InitialGrid(1);
 
     
-    // Print NETS with corresponding CELL ids using map, now the indexes are the sam as cell identifiers
-    cout << endl << "NETS with corresponding CELL ids:" << endl;
-    for (const Net& net : NETS) {
-        cout << "Net " << net.id << " -> Cells: ";
-        for (const auto& pair : net.cells) {
-            cout << pair.first << " ";
-        }
-        cout << endl;
-    }
-    
-    // Print CELLS with all corresponding nets
-    cout << endl << "CELLS with all corresponding nets:" << endl;
-    for (const cells& cell : CELLS) {
-        cout << "Cell " << cell.identifier << " -> Nets: ";
-        for (int netIndex : cell.connections) {
-            cout << netIndex << " ";
-        }
-        cout << endl;
-    }
+    // print NETS with corresponding CELL ids using map, now the indexes are the sam as cell identifiers
+//    cout << endl << "NETS with corresponding CELL ids:" << endl;
+//    for (const Net& net : NETS) {
+//        cout << "Net " << net.id << " -> Cells: ";
+//        for (const auto& pair : net.cells) {
+//            cout << pair.first << " ";
+//        }
+//        cout << endl;
+//    }
+//    
+//    // Print CELLS with all corresponding nets using index
+//    cout << endl << "CELLS with all corresponding nets:" << endl;
+//    for (const cells& cell : CELLS) {
+//        cout << "Cell " << cell.identifier << " -> Nets: ";
+//        for (int netIndex : cell.connections) {
+//            cout << netIndex << " ";
+//        }
+//        cout << endl;
+//    }
 }
-
-
-
-void print_cell_cord(vector<cells> cell_vec){
-    cout<<endl<<"Cells Coordinates";
-    for(int i=0;i<cell_vec.size();i++){
-        cout<<cell_vec[i].identifier<<" ";
-        cout<<cell_vec[i].xmargin<<" "<<cell_vec[i].ymargin<<endl;
-    }
-}
-
-void adjust_cell_cord(vector<cells> &cell_vec,int index,cells cell_app){
-    cell_vec[index].identifier=cell_app.identifier;
-    cell_vec[index].xmargin =cell_app.xmargin;
-    cell_vec[index].ymargin=cell_app.ymargin;
-}
-
 int get_identfier_index(vector<cells> vec,int cell_numb){
     for(int i=0;i<vec.size();i++){
         if(vec[i].identifier==cell_numb)
@@ -224,7 +207,7 @@ vector<int> unique_cells(const vector<vector<cells>>& nets) {
 vector<int> cost; // Changed it to a global variable to calculate the total wire length
 vector <Cost> cost_new; // vector
 
-//vector<int>
+
 int get_tot_length(){
     int tot=0;
     for(int i=0;i<cost_new.size();i++){
@@ -233,12 +216,12 @@ int get_tot_length(){
     return tot;
     
 }
-// new cost function with faster execution, using the global cord vector.
-void get_cost_new() {
+
+void RandomPlacementCost() {
     cost_new.clear();
     cost_new.resize(nets.size());
     
-    for (const auto& cell : cell_cord) {
+    for (const auto& cell : CELLS) {
         for (const int& conn_idx : cell.connections) {
             auto& cost = cost_new[conn_idx];
             if (cost.x_max == -1) {
@@ -261,40 +244,46 @@ void get_cost_new() {
     }
 }
 
-
 int c=0;
-void get_cost(vector<cells> cell_cordn){
-    cost_new.clear();
-    cost_new.resize(nets.size());
-    for(int i=0;i<cell_cordn.size();i++){
-        for(int j=0;j<cell_cordn[i].connections.size();j++){
-            int cell_indx=cell_cordn[i].connections[j];
-            if(cost_new[cell_indx].x_max==-1){// empty set by default
-                cost_new[cell_indx].x_max=cell_cordn[i].xmargin;
-                cost_new[cell_indx].x_min=cell_cordn[i].xmargin;
-                cost_new[cell_indx].y_max=cell_cordn[i].ymargin;
-                cost_new[cell_indx].y_min=cell_cordn[i].ymargin;
-            }
-            else{
-                if(cell_cordn[i].xmargin< cost_new[cell_indx].x_min){
-                    cost_new[cell_indx].x_min=cell_cordn[i].xmargin;
-                }
-                else if(cell_cordn[i].xmargin> cost_new[cell_indx].x_max){
-                    cost_new[cell_indx].x_max=cell_cordn[i].xmargin;
-                }
-                if(cell_cordn[i].ymargin< cost_new[cell_indx].y_min){
-                    cost_new[cell_indx].y_min=cell_cordn[i].ymargin;
-                }
-                else if(cell_cordn[i].ymargin> cost_new[cell_indx].y_max){
-                    cost_new[cell_indx].y_max=cell_cordn[i].ymargin;
-                }
-            }
+// new update cot for only the affected nets
+void Update_Cost(vector<cells>& CELLS, int index1, int index2) {
+    unordered_set<int> affected_nets; // set for only the affected nets to iterate over
+
+    if (index1 >= 0) {
+        for (int net : CELLS[index1].connections) {
+            affected_nets.insert(net);
         }
     }
-    for(int i=0;i<cost_new.size();i++){
-        cost_new[i].tot_len=(cost_new[i].x_max-cost_new[i].x_min)+(cost_new[i].y_max-cost_new[i].y_min);
+
+    if (index2 >= 0) {
+        for (int net : CELLS[index2].connections) {
+            affected_nets.insert(net);
+        }
+    }
+
+    // calculate costs only for affected nets
+    for (int net_index : affected_nets) {
+        auto& net = NETS[net_index];
+        int x_min = INT_MAX, x_max = -1, y_min = INT_MAX, y_max = -1;
+
+        // calculate each cell
+        for (auto& cell_id : net.cells) {
+            int idx = cell_id.second; // map accessing
+            x_min = min(x_min, CELLS[idx].xmargin);
+            x_max = max(x_max, CELLS[idx].xmargin);
+            y_min = min(y_min, CELLS[idx].ymargin);
+            y_max = max(y_max, CELLS[idx].ymargin);
+        }
+
+        Cost& cost = cost_new[net_index];
+        cost.x_min = x_min;
+        cost.x_max = x_max;
+        cost.y_min = y_min;
+        cost.y_max = y_max;
+        cost.tot_len = (x_max - x_min) + (y_max - y_min);
     }
 }
+
 
 void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
     for (size_t i = 0; i < nets_vec.size(); ++i) {
@@ -309,54 +298,51 @@ void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
     }
 }
 
-void RandomInitialPlacement(vector<int >unique){
-    int counter=0;
-    int sze=unique.size();
-    minstd_rand rng(time(0));
-    // uniform_int_distribution<int> rndm(0, unique.size()-1);
+void RandomInitialPlacement(vector<int> unique) {
+    int counter = 0;
+    int sze = unique.size();
+    minstd_rand rng(static_cast<unsigned int>(time(0))); // Ensure proper seeding
     uniform_int_distribution<int> zno(0, 1);
-    
-    for (int i = 0; i<row; i++) {
-        
-        for (int j = 0; j<column; j++) {
-            uniform_int_distribution<int> rndm(0, unique.size()-1);
-            cells cell_temp;
-            int random=zno(rng);
-            if(random){
-                int rd=rndm(rng);
-                grid[i][j] =unique[rd];
-                cell_temp.identifier=unique[rd];
-                unique.erase(unique.begin() + rd);
-                // grid[i][j] =unique[counter];
-                //  cell_temp.identifier=unique[counter];
-                cell_temp.xmargin=i;
-                cell_temp.ymargin=j;
-                cell_cord.push_back(cell_temp);
-                counter++;
+
+    cout << "Starting Random Initial Placement" << endl;
+
+    for (int i = 0; i < row; i++) {
+        for (int j = 0; j < column; j++) {
+            uniform_int_distribution<int> rndm(0, unique.size() - 1);
+            int random = zno(rng);
+            if (random) {
+                if (!unique.empty()) {
+                    int rd = rndm(rng);
+                    grid[i][j] = unique[rd];
+                    cells cell_temp(unique[rd], i, j); // Updated xmargin and ymargin with i, j
+//                    cell_cord.push_back(cell_temp);
+                    CELLS[unique[rd]].xmargin = i; // Correctly updating CELLS vector(new)
+                    CELLS[unique[rd]].ymargin = j;
+                    unique.erase(unique.begin() + rd);
+//                    cout << "laced cell " << cell_temp.identifier << " at (" << i << ", " << j << ")" << endl;
+                }
+            } else if ((column * row) - (i * column + j) <= sze - counter) {
+                if (!unique.empty()) {
+                    int rd = rndm(rng);
+                    grid[i][j] = unique[rd];
+                    cells cell_temp(unique[rd], i, j);
+//                    cell_cord.push_back(cell_temp);
+                    CELLS[unique[rd]].xmargin = i;
+                    CELLS[unique[rd]].ymargin = j;
+                    unique.erase(unique.begin() + rd);
+//                    cout << " placed cell " << cell_temp.identifier << " at (" << i << ", " << j << ")" << endl;
+                }
             }
-            else if((column*row)- (i*column+j)<=sze-counter ){/*fill grid when the left spaces are less or equal
-                                                                              to remaing cells to be inserted */
-                int rd=rndm(rng);
-                grid[i][j] =unique[rd];
-                cell_temp.identifier=unique[rd];
-                unique.erase(unique.begin() + rd);
-                // grid[i][j] =unique[counter];
-                //  cell_temp.identifier=unique[counter];
-                cell_temp.xmargin=i;
-                cell_temp.ymargin=j;
-                cell_cord.push_back(cell_temp);
-                counter++;
-            }
-            
         }
-        
     }
-    equate_net_cord(nets,cell_cord);
-    //     get_cost(nets);
-    get_cost_new();
-    
-    
+
+//    cout << " Verifying cell coordinates:" << endl;
+//    for (const auto& cell : CELLS) {
+//        cout << "Cell " << cell.identifier << " at (" << cell.xmargin << ", " << cell.ymargin << ")" << endl;
+//    }
+    RandomPlacementCost();
 }
+
 int get_rand_int(int min,int max){
     random_device rd;
     mt19937 gen(rd());
@@ -375,39 +361,34 @@ int counter =0;
 
 void swap_cells(cells c1,cells c2){
     
-    if(c1.identifier>=0&&c1.identifier<cell_cord.size()&&c2.identifier>=0&&c2.identifier<cell_cord.size()&&c1.identifier!=c2.identifier){
-        int i1=get_identfier_index(cell_cord,c1.identifier);
-        int i2=get_identfier_index(cell_cord,c2.identifier);
-        cell_cord[i1].xmargin=c2.xmargin;
-        cell_cord[i1].ymargin=c2.ymargin;
-        cell_cord[i2].xmargin=c1.xmargin;
-        cell_cord[i2].ymargin=c1.ymargin;
+    if(c1.identifier>=0&&c1.identifier<CELLS.size()&&c2.identifier>=0&&c2.identifier<CELLS.size()&&c1.identifier!=c2.identifier){
+        int i1=c1.identifier;
+        int i2=c2.identifier;
+        CELLS[i1].xmargin=c2.xmargin;
+        CELLS[i1].ymargin=c2.ymargin;
+        CELLS[i2].xmargin=c1.xmargin;
+        CELLS[i2].ymargin=c1.ymargin;
         
-        get_cost_new();
-        if (counter==0){
-            cout << i1 << " cooresponds => "<< cell_cord[i1].identifier<<endl;
-            cout << i2 << " cooresponds => "<< cell_cord[i2].identifier<<endl;
-            counter++;
-        }
+        Update_Cost(CELLS,c1.identifier,c2.identifier);// new update cost with cell ids as indexes
         grid[c1.xmargin][c1.ymargin]=c2.identifier;
         grid[c2.xmargin][c2.ymargin]=c1.identifier;
         
     }
-    else if(c1.identifier>=0&&c1.identifier<cell_cord.size()&&c2.identifier==-1){
+    else if(c1.identifier>=0&&c1.identifier<CELLS.size()&&c2.identifier==-1){
         
-        int i1=get_identfier_index(cell_cord,c1.identifier);
-        cell_cord[i1].xmargin=c2.xmargin;
-        cell_cord[i1].ymargin=c2.ymargin;
-        get_cost_new();
+        int i1=c1.identifier;
+        CELLS[i1].xmargin=c2.xmargin;
+        CELLS[i1].ymargin=c2.ymargin;
+        Update_Cost(CELLS,c1.identifier,-1);// new update cost with cell ids as indexes
         grid[c1.xmargin][c1.ymargin]=c2.identifier;
         grid[c2.xmargin][c2.ymargin]=c1.identifier;
     }
-    else if(c2.identifier>=0&&c2.identifier<cell_cord.size()&&c1.identifier==-1){
+    else if(c2.identifier>=0&&c2.identifier<CELLS.size()&&c1.identifier==-1){
         
-        int i2=get_identfier_index(cell_cord,c2.identifier);
-        cell_cord[i2].xmargin=c1.xmargin;
-        cell_cord[i2].ymargin=c1.ymargin;
-        get_cost_new();
+        int i2=c2.identifier;
+        CELLS[i2].xmargin=c1.xmargin;
+        CELLS[i2].ymargin=c1.ymargin;
+        Update_Cost(CELLS,-1,c2.identifier);// new update cost with cell ids as indexes
         grid[c1.xmargin][c1.ymargin]=c2.identifier;
         grid[c2.xmargin][c2.ymargin]=c1.identifier;
     }
@@ -421,7 +402,7 @@ void simulate_annealing(int intial_wire_lenght){
     int cell_identfier_1,cell_identfier_2;
     int cell_x1,cell_x2,cell_y1,cell_y2;
     int HPWL_1,HPWL_2,HPWL_diff;
-    int N_moves=cell_cord.size();
+    int N_moves=CELLS.size();
     float coolingrate = 0.95;
     //    cout<<"cell numbers"<<cell_cord.size()<<"\n";
     
@@ -435,10 +416,10 @@ void simulate_annealing(int intial_wire_lenght){
     uniform_int_distribution<int> intColumnsRange(0, column-1);
     uniform_real_distribution<double> doubleDist(0, 1);
     int counter=0;
-    milliseconds t =milliseconds(0);
+    milliseconds t = milliseconds(0);
     while(curr_temp>T.FinalTemp){
         
-        for(int i=0;i<N_moves; ++i){
+        for(int i=0;i<20*N_moves; ++i){
             counter++;
             /*cell_x1=get_rand_int(0,NL.row-1);
              cell_y1=get_rand_int(0,NL.column-1);
@@ -489,6 +470,7 @@ void simulate_annealing(int intial_wire_lenght){
     
 }
 
+
 void InitialGrid(int indc){
     cout << "--------------------------------------------------------------------------------------------------------------------------------\n";
     grid.resize(row);
@@ -535,7 +517,7 @@ void InitialGrid(int indc){
 int main(){
     
     // Temperature obj;
-    string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d0.txt";
+    string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d1.txt";
     Parsing_and_Assigning(FileName);
     
     int intial_wire_lenght=get_tot_length();
@@ -550,18 +532,30 @@ int main(){
     auto delta_time= duration_cast<milliseconds>(end-start);
     cout<<"Time Taken: "<<delta_time.count()/1000.0<<" seconds"<<endl;
     
-    cout<<endl<<"Cells and their net connections: \n";
-//    for(int i=0;i<cell_cord.size();i++){
-//        cout<<cell_cord[i].identifier<<"("<<cell_cord[i].xmargin<<","<<cell_cord[i].ymargin<<") connections: ";
-//        for(int j=0;j<cell_cord[i].connections.size();j++){
-//            cout<<cell_cord[i].connections[j]<<" , ";
-//        }
-//        cout<<endl;
+    //    cout<<endl<<"Cells and their net connections: \n";
+    //    for(int i=0;i<cell_cord.size();i++){
+    //        cout<<cell_cord[i].identifier<<"("<<cell_cord[i].xmargin<<","<<cell_cord[i].ymargin<<") connections: ";
+    //        for(int j=0;j<cell_cord[i].connections.size();j++){
+    //            cout<<cell_cord[i].connections[j]<<" , ";
+    //        }
+    //        cout<<endl;
+    //    }
+//    for (int i =0; i<CELLS[15].connections.size(); i++){
+//        
+//        cout<<CELLS[15].connections[i]<<endl; // hena masaln tal3ly 1,2,6,14 which are the indexes of the nets associated.
+//        
 //    }
-    for (int i =0; i<CELLS[15].connections.size(); i++){
-            
-        cout<<CELLS[15].connections[i]<<endl; // hena masaln tal3ly 1,2,6,14 which are the indexes of the nets associated.
-            
-        }
+//    NETS[2].maxX=7;
+//    NETS[2].maxY=3;
+//    NETS[2].minY=1;
+//    NETS[2].minX=3;
+//    
+//    cout<<CELLS[15].connections[1];
+//    
+//    cout<<CELLS[15].ymargin;
+//    cout<<NETS[CELLS[15].connections[1]].cells[14];
+//    cout<<"da eh now=>"<<cost_new[0].tot_len<<endl;
+
     
+//    cout<<cell_cord.size()<<"Compared to"<<CELLS.size();
 }
