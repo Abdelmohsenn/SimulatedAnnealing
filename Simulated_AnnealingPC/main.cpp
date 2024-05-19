@@ -1,10 +1,3 @@
-//
-//  main.cpp
-//  Simulated_AnnealingPC
-//
-//  Created by muhammad abdelmohsen on 30/04/2024.
-//
-
 #include <iostream>
 #include <vector>
 #include <string>
@@ -18,7 +11,7 @@
 #include <iomanip>
 #include<random>
 #include <climits>
-
+#include <cstdlib>
 //#include "CImg.h"
 
 
@@ -392,28 +385,36 @@ void swap_cells(cells c1,cells c2){
     
 }
 
+  vector<int> total_wire_length; //used to plot the temperature vs TWL graph
+  vector<double> temp; //used to plot the temperature vs TWL graph
+  vector<float> coolingrate = {0.95, 0.9, 0.85, 0.8, 0.75};  // used to plot the cooling rate vs TWL graph
+  vector<int> totalgraphlength; // used to plot the cooling rate vs TWL graph
 
 
-
-void simulate_annealing(int intial_wire_lenght){
+void simulate_annealing(int intial_wire_length, float coolingrate){
     int cell_identfier_1,cell_identfier_2;
     int cell_x1,cell_x2,cell_y1,cell_y2;
     int HPWL_1,HPWL_2,HPWL_diff;
     int N_moves=CELLS.size();
-    float coolingrate = 0.95;
-    //    cout<<"cell numbers"<<cell_cord.size()<<"\n";
+   // float coolingrate = 0.95;
+    //cout<<"cell numbers"<<cell_cord.size()<<"\n";
     
-    Temperature T(intial_wire_lenght,nets.size());
+    Temperature T(intial_wire_length,nets.size());
     double curr_temp=T.initialTemp;
     double prob;
     double rand_doubl;
-    minstd_rand rng(time(0));
-    
+    // minstd_rand rng(time(0));
+    unsigned seed = 12345; 
+    minstd_rand rng(seed);
+   
+    temp.push_back(T.initialTemp);
     uniform_int_distribution<int> intRowsRange(0, row-1);
     uniform_int_distribution<int> intColumnsRange(0, column-1);
     uniform_real_distribution<double> doubleDist(0, 1);
     int counter=0;
+    int HPWL_3=0;
     milliseconds t = milliseconds(0);
+  
     while(curr_temp>T.FinalTemp){
         
         for(int i=0;i<20*N_moves; ++i){
@@ -454,16 +455,21 @@ void simulate_annealing(int intial_wire_lenght){
                     //                    t=t+delta_time;
                     //                    cout<<delta_time;
                     
-                    
+                    // cout<<"random double"<<rand_doubl<<endl;
+                    // cout<<"rng"<<rng<<endl;
                 }
             }
             
         }
+
+        HPWL_3=get_tot_length();
         curr_temp = curr_temp * coolingrate;
+        total_wire_length.push_back(HPWL_3);
+        temp.push_back(curr_temp);
     }
     
     cout<< " total number of iterations => "<<counter<<endl;
-    cout<< " total time taken in swap => "<<t<<endl;
+    cout<< " total time taken in swap => " <<t.count()<<endl;
     
 }
 
@@ -510,25 +516,91 @@ void InitialGrid(int indc){
     cout << "--------------------------------------------------------------------------------------------------------------------------------\n";
 }
 
+void plot_graphs()
+{
+ofstream file("graph.csv");
+    if (file.is_open()) {
+        for (size_t i = 0; i < total_wire_length.size(); ++i) {
+            file <<temp[i]  << "," << total_wire_length[i] << "\n";
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file";
+    }
 
+
+    const char* command =
+             "python -c \""
+    "import matplotlib.pyplot as plt; "
+    "import numpy as np; "
+    "data = np.loadtxt('graph.csv', delimiter=','); "  
+    "x = data[:, 0]; "
+    "y = data[:, 1]; "
+    "plt.plot(x, y, 'b-'); " 
+    "plt.xlabel('Temperature'); "
+    "plt.ylabel('Total Wire Length'); "
+    "plt.gca().invert_xaxis(); " 
+    "plt.title('Wire Length vs Temperature'); "
+    "plt.grid(True); "
+    "plt.show()\"";
+    std::system(command);
+
+}
+void plot_coolingrate()
+{
+ofstream file("coolrate.csv");
+ if (file.is_open()) {
+        for (size_t i = 0; i < coolingrate.size(); ++i) {
+            file <<coolingrate[i] << "," << totalgraphlength[i] << "\n";
+        }
+        file.close();
+    } else {
+        std::cerr << "Unable to open file";
+    }
+
+
+    const char* command =
+             "python -c \""
+    "import matplotlib.pyplot as plt; "
+    "import numpy as np; "
+    "data = np.loadtxt('coolrate.csv', delimiter=','); "  
+    "x = data[:, 0]; "
+    "y = data[:, 1]; "
+    "plt.plot(x, y, 'b-'); " 
+    "plt.xlabel('Cooling Rate'); "
+    "plt.ylabel('Total Wire Length'); "
+   
+    "plt.title('Wire Length vs Temperature'); "
+    "plt.grid(True); "
+    "plt.show()\"";
+    std::system(command);
+
+
+}
 int main(){
     
     // Temperature obj;
-    string FileName = "/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/d1.txt";
+    string FileName = "d3.txt";
     Parsing_and_Assigning(FileName);
     
-    int intial_wire_lenght=get_tot_length();
-    cout<<"\nTotal Wire Length is " <<intial_wire_lenght<<endl;// outputting the wire length
+    int intial_wire_length=get_tot_length();
+    cout<<"\nTotal Wire Length is " <<intial_wire_length<<endl;// outputting the wire length
     
+    // for(int i=0; i< coolingrate.size();i++)
+    // {
     auto start = steady_clock::now();
-    simulate_annealing(intial_wire_lenght);
+    simulate_annealing(intial_wire_length, coolingrate[0]);
     auto end=steady_clock::now();
     int final_wire_lenght=get_tot_length();
     InitialGrid(1);
     cout<<"\nTotal Wire Length is " << final_wire_lenght<<endl;
+
+    totalgraphlength.push_back(final_wire_lenght);
     auto delta_time= duration_cast<milliseconds>(end-start);
     cout<<"Time Taken: "<<delta_time.count()/1000.0<<" seconds"<<endl;
-    
+ //   }
+    plot_graphs();
+  //  plot_coolingrate();
     //    cout<<endl<<"Cells and their net connections: \n";
     //    for(int i=0;i<cell_cord.size();i++){
     //        cout<<cell_cord[i].identifier<<"("<<cell_cord[i].xmargin<<","<<cell_cord[i].ymargin<<") connections: ";
@@ -552,7 +624,6 @@ int main(){
 //    cout<<CELLS[15].ymargin;
 //    cout<<NETS[CELLS[15].connections[1]].cells[14];
 //    cout<<"da eh now=>"<<cost_new[0].tot_len<<endl;
-
-    
 //    cout<<cell_cord.size()<<"Compared to"<<CELLS.size();
+    
 }
