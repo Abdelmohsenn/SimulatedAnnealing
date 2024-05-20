@@ -6,16 +6,13 @@
 #include <fstream>
 #include <sstream>
 #include <map>
-#include <chrono> // timing library
+#include <chrono>
 #include <unordered_set>
 #include <iomanip>
 #include<random>
 #include <climits>
 #include <cstdlib>
-//#include "CImg.h"
 
-
-//using namespace cimg_library;
 using namespace std;
 using namespace std::chrono;
 
@@ -152,6 +149,7 @@ void Parsing_and_Assigning(string file) {
     vector<int> unique = unique_cells(nets);
     InitialGrid(0);
     RandomInitialPlacement(unique);
+    InitialGrid(0);
     cout << endl << "Grid after Random Placement: \n";
     InitialGrid(1);
 
@@ -273,6 +271,20 @@ void Update_Cost(vector<cells>& CELLS, int index1, int index2) {
         cost.tot_len = (x_max - x_min) + (y_max - y_min);
     }
 }
+//void saveGridStateToFile(const vector<vector<int>>& grid, int step) {
+//    ofstream file("/Users/muhammadabdelmohsen/Desktop/Spring 24/DD2/Project/Gifs/T1/grid_state_" + to_string(step) + ".csv");
+//    for (const auto& row : grid) {
+//        for (size_t i = 0; i < row.size(); ++i) {
+//            file << row[i];
+//            if (i < row.size() - 1) {
+//                file << ",";
+//            }
+//        }
+//        file << "\n";
+//    }
+//
+//    file.close();
+//}
 
 
 void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
@@ -415,6 +427,7 @@ void simulate_annealing(int intial_wire_length, float coolingrate){
     int HPWL_3=0;
     milliseconds t = milliseconds(0);
   
+    int step = 0;
     while(curr_temp>T.FinalTemp){
         
         for(int i=0;i<20*N_moves; ++i){
@@ -466,6 +479,8 @@ void simulate_annealing(int intial_wire_length, float coolingrate){
         curr_temp = curr_temp * coolingrate;
         total_wire_length.push_back(HPWL_3);
         temp.push_back(curr_temp);
+//        saveGridStateToFile(grid, step); // gif
+        step++;
     }
     
     cout<< " total number of iterations => "<<counter<<endl;
@@ -486,11 +501,11 @@ void InitialGrid(int indc){
             for (int j = 0; j<column; j++) {
                 if (grid[i][j] == -1) {
                     // cout << setw(4)<<"-"<< " "; // Print the empty cells
-                    cout << setw(4)<<"1"<< " ";
+                    cout <<"1"<< " ";
                     
                 } else{
                     //cout << setw(4)<<grid[i][j] << " "; // Print the value of each cell
-                    cout << setw(4)<<"0"<< " ";
+                    cout <<"0"<< " ";
                 }
             }
             cout<<endl;
@@ -577,10 +592,10 @@ ofstream file("coolrate.csv");
 
 
 }
-int main(){
+int main(int argc, char* argv[]){
     
     // Temperature obj;
-    string FileName = "d3.txt";
+    string FileName = argv[1];
     Parsing_and_Assigning(FileName);
     
     int intial_wire_length=get_tot_length();
@@ -627,3 +642,4 @@ int main(){
 //    cout<<cell_cord.size()<<"Compared to"<<CELLS.size();
     
 }
+//g++ main.cpp -O3 -lX11 -lpthread -std=c++17 -march=native -funroll-loops -ffast-math -o main
