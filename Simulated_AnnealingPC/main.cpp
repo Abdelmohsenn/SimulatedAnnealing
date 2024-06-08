@@ -32,7 +32,7 @@ struct Cost {
 struct Net {
     int id;
     map<int, int> cells;  // Changed from vector<int> to map<int, int>
-
+    
     Net(int id) : id(id) {}
 };
 
@@ -107,79 +107,53 @@ void Parsing_and_Assigning(string file) {
         cerr << "Failed to read line from the file\n";
         return;
     }
-
+    
     int lineNumber = 2; // starting point
     CELLS.resize(NumberOfCells);  // Resize CELLS to the number of cells
-
+    
     while (getline(readfile, netline)) {
         istringstream Netparser(netline);
         if (!(Netparser >> NumComp)) {
             cerr << "Error parsing line " << lineNumber << ": Missing number of components\n";
             return;
         }
-
+        
         net.clear();
         while (Netparser >> netword) {
             Cell.identifier = netword;
             net.push_back(Cell);
             net.back().connections.push_back(netIndex); // assigning the index of the current net to the cell
             CELLS[netword].connections.push_back(netIndex); // assigning each cell with all nets indexes
-
+            
             CELLS[netword].identifier=netword;
         }
-
+        
         if (net.size() != NumComp) {
             cerr << "Error parsing line " << lineNumber << ": Number of components does not match\n";
             return;
         }
-
+        
         // Update NETS with the current net
         NETS.push_back(Net(netIndex));
         for (const cells& cell : net) {
             NETS.back().cells[cell.identifier] = cell.identifier; // Map to map the net index to cell identifiers
         }
-
+        
         netIndex++;
         nets.push_back(net);
         lineNumber++;
     }
-
+    
     readfile.close();
-
+    
     vector<int> unique = unique_cells(nets);
     InitialGrid(0);
     RandomInitialPlacement(unique);
     InitialGrid(0);
     cout << endl << "Grid after Random Placement: \n";
     InitialGrid(1);
-
     
-    // print NETS with corresponding CELL ids using map, now the indexes are the sam as cell identifiers
-//    cout << endl << "NETS with corresponding CELL ids:" << endl;
-//    for (const Net& net : NETS) {
-//        cout << "Net " << net.id << " -> Cells: ";
-//        for (const auto& pair : net.cells) {
-//            cout << pair.first << " ";
-//        }
-//        cout << endl;
-//    }
-//    
-//    // Print CELLS with all corresponding nets using index
-//    cout << endl << "CELLS with all corresponding nets:" << endl;
-//    for (const cells& cell : CELLS) {
-//        cout << "Cell " << cell.identifier << " -> Nets: ";
-//        for (int netIndex : cell.connections) {
-//            cout << netIndex << " ";
-//        }
-//        cout << endl;
-//    }
-}
-int get_identfier_index(vector<cells> vec,int cell_numb){
-    for(int i=0;i<vec.size();i++){
-        if(vec[i].identifier==cell_numb)
-            return i;
-    }
-    return 0;
+    
 }
 
 vector<int> unique_cells(const vector<vector<cells>>& nets) {
@@ -236,24 +210,24 @@ int c=0;
 // new update cot for only the affected nets
 void Update_Cost(vector<cells>& CELLS, int index1, int index2) {
     unordered_set<int> affected_nets; // set for only the affected nets to iterate over
-
+    
     if (index1 >= 0) {
         for (int net : CELLS[index1].connections) {
             affected_nets.insert(net);
         }
     }
-
+    
     if (index2 >= 0) {
         for (int net : CELLS[index2].connections) {
             affected_nets.insert(net);
         }
     }
-
+    
     // calculate costs only for affected nets
     for (int net_index : affected_nets) {
         auto& net = NETS[net_index];
         int x_min = INT_MAX, x_max = -1, y_min = INT_MAX, y_max = -1;
-
+        
         // calculate each cell
         for (auto& cell_id : net.cells) {
             int idx = cell_id.second; // map accessing
@@ -262,7 +236,7 @@ void Update_Cost(vector<cells>& CELLS, int index1, int index2) {
             y_min = min(y_min, CELLS[idx].ymargin);
             y_max = max(y_max, CELLS[idx].ymargin);
         }
-
+        
         Cost& cost = cost_new[net_index];
         cost.x_min = x_min;
         cost.x_max = x_max;
@@ -286,28 +260,14 @@ void Update_Cost(vector<cells>& CELLS, int index1, int index2) {
 //    file.close();
 //}
 
-
-void equate_net_cord(vector<vector<cells>>& nets_vec, vector<cells>& coord) {
-    for (size_t i = 0; i < nets_vec.size(); ++i) {
-        
-        for (size_t j = 0; j < nets_vec[i].size(); ++j) {
-            int index = get_identfier_index(coord, nets_vec[i][j].identifier);
-            nets_vec[i][j].xmargin = coord[index].xmargin;
-            nets_vec[i][j].ymargin = coord[index].ymargin;
-            coord[index].connections.push_back(i);
-            
-        }
-    }
-}
-
 void RandomInitialPlacement(vector<int> unique) {
     int counter = 0;
     int sze = unique.size();
     minstd_rand rng(static_cast<unsigned int>(time(0))); // Ensure proper seeding
     uniform_int_distribution<int> zno(0, 1);
-
+    
     cout << "Starting Random Initial Placement" << endl;
-
+    
     for (int i = 0; i < row; i++) {
         for (int j = 0; j < column; j++) {
             uniform_int_distribution<int> rndm(0, unique.size() - 1);
@@ -317,31 +277,24 @@ void RandomInitialPlacement(vector<int> unique) {
                     int rd = rndm(rng);
                     grid[i][j] = unique[rd];
                     cells cell_temp(unique[rd], i, j); // Updated xmargin and ymargin with i, j
-//                    cell_cord.push_back(cell_temp);
                     CELLS[unique[rd]].xmargin = i; // Correctly updating CELLS vector(new)
                     CELLS[unique[rd]].ymargin = j;
                     unique.erase(unique.begin() + rd);
-//                    cout << "laced cell " << cell_temp.identifier << " at (" << i << ", " << j << ")" << endl;
                 }
             } else if ((column * row) - (i * column + j) <= sze - counter) {
                 if (!unique.empty()) {
                     int rd = rndm(rng);
                     grid[i][j] = unique[rd];
                     cells cell_temp(unique[rd], i, j);
-//                    cell_cord.push_back(cell_temp);
                     CELLS[unique[rd]].xmargin = i;
                     CELLS[unique[rd]].ymargin = j;
                     unique.erase(unique.begin() + rd);
-//                    cout << " placed cell " << cell_temp.identifier << " at (" << i << ", " << j << ")" << endl;
                 }
             }
         }
     }
-
-//    cout << " Verifying cell coordinates:" << endl;
-//    for (const auto& cell : CELLS) {
-//        cout << "Cell " << cell.identifier << " at (" << cell.xmargin << ", " << cell.ymargin << ")" << endl;
-//    }
+    
+    
     RandomPlacementCost();
 }
 
@@ -397,10 +350,10 @@ void swap_cells(cells c1,cells c2){
     
 }
 
-  vector<int> total_wire_length; //used to plot the temperature vs TWL graph
-  vector<double> temp; //used to plot the temperature vs TWL graph
-  vector<float> coolingrate = {0.95, 0.9, 0.85, 0.8, 0.75};  // used to plot the cooling rate vs TWL graph
-  vector<int> totalgraphlength; // used to plot the cooling rate vs TWL graph
+vector<int> total_wire_length; //used to plot the temperature vs TWL graph
+vector<double> temp; //used to plot the temperature vs TWL graph
+vector<float> coolingrate = {0.95, 0.9, 0.85, 0.8, 0.75};  // used to plot the cooling rate vs TWL graph
+vector<int> totalgraphlength; // used to plot the cooling rate vs TWL graph
 
 
 void simulate_annealing(int intial_wire_length, float coolingrate){
@@ -408,17 +361,16 @@ void simulate_annealing(int intial_wire_length, float coolingrate){
     int cell_x1,cell_x2,cell_y1,cell_y2;
     int HPWL_1,HPWL_2,HPWL_diff;
     int N_moves=CELLS.size();
-   // float coolingrate = 0.95;
-    //cout<<"cell numbers"<<cell_cord.size()<<"\n";
+    
     
     Temperature T(intial_wire_length,nets.size());
     double curr_temp=T.initialTemp;
     double prob;
     double rand_doubl;
     // minstd_rand rng(time(0));
-    unsigned seed = 12345; 
+    unsigned seed = 12345;
     minstd_rand rng(seed);
-   
+    
     temp.push_back(T.initialTemp);
     uniform_int_distribution<int> intRowsRange(0, row-1);
     uniform_int_distribution<int> intColumnsRange(0, column-1);
@@ -426,16 +378,12 @@ void simulate_annealing(int intial_wire_length, float coolingrate){
     int counter=0;
     int HPWL_3=0;
     milliseconds t = milliseconds(0);
-  
+    
     int step = 0;
     while(curr_temp>T.FinalTemp){
         
         for(int i=0;i<20*N_moves; ++i){
             counter++;
-            /*cell_x1=get_rand_int(0,NL.row-1);
-             cell_y1=get_rand_int(0,NL.column-1);
-             cell_x2=get_rand_int(0,NL.row-1);
-             cell_y2=get_rand_int(0,NL.column-1);*/
             
             cell_x1=intRowsRange(rng);
             cell_y1=intColumnsRange(rng);
@@ -461,25 +409,18 @@ void simulate_annealing(int intial_wire_length, float coolingrate){
                 if(rand_doubl>prob){
                     cells c1(cell_identfier_1,cell_x2,cell_y2);
                     cells c2(cell_identfier_2,cell_x1,cell_y1);
-                    //                    auto start = steady_clock::now();
                     swap_cells(c1,c2);
-                    //                    auto end = steady_clock::now();
-                    //                    auto delta_time= duration_cast<milliseconds>(end-start);
-                    //                    t=t+delta_time;
-                    //                    cout<<delta_time;
                     
-                    // cout<<"random double"<<rand_doubl<<endl;
-                    // cout<<"rng"<<rng<<endl;
                 }
             }
             
         }
-
+        
         HPWL_3=get_tot_length();
         curr_temp = curr_temp * coolingrate;
         total_wire_length.push_back(HPWL_3);
         temp.push_back(curr_temp);
-//        saveGridStateToFile(grid, step); // gif
+        //        saveGridStateToFile(grid, step); // gif
         step++;
     }
     
@@ -501,11 +442,11 @@ void InitialGrid(int indc){
             for (int j = 0; j<column; j++) {
                 if (grid[i][j] == -1) {
                     // cout << setw(4)<<"-"<< " "; // Print the empty cells
-                    cout <<"1"<< " ";
+                    cout <<"1";
                     
                 } else{
                     //cout << setw(4)<<grid[i][j] << " "; // Print the value of each cell
-                    cout <<"0"<< " ";
+                    cout <<"0";
                 }
             }
             cout<<endl;
@@ -533,7 +474,7 @@ void InitialGrid(int indc){
 
 void plot_graphs()
 {
-ofstream file("graph.csv");
+    ofstream file("graph.csv");
     if (file.is_open()) {
         for (size_t i = 0; i < total_wire_length.size(); ++i) {
             file <<temp[i]  << "," << total_wire_length[i] << "\n";
@@ -542,29 +483,29 @@ ofstream file("graph.csv");
     } else {
         std::cerr << "Unable to open file";
     }
-
-
+    
+    
     const char* command =
-             "python -c \""
+    "python -c \""
     "import matplotlib.pyplot as plt; "
     "import numpy as np; "
-    "data = np.loadtxt('graph.csv', delimiter=','); "  
+    "data = np.loadtxt('graph.csv', delimiter=','); "
     "x = data[:, 0]; "
     "y = data[:, 1]; "
-    "plt.plot(x, y, 'b-'); " 
+    "plt.plot(x, y, 'b-'); "
     "plt.xlabel('Temperature'); "
     "plt.ylabel('Total Wire Length'); "
-    "plt.gca().invert_xaxis(); " 
+    "plt.gca().invert_xaxis(); "
     "plt.title('Wire Length vs Temperature'); "
     "plt.grid(True); "
     "plt.show()\"";
     std::system(command);
-
+    
 }
 void plot_coolingrate()
 {
-ofstream file("coolrate.csv");
- if (file.is_open()) {
+    ofstream file("coolrate.csv");
+    if (file.is_open()) {
         for (size_t i = 0; i < coolingrate.size(); ++i) {
             file <<coolingrate[i] << "," << totalgraphlength[i] << "\n";
         }
@@ -572,25 +513,25 @@ ofstream file("coolrate.csv");
     } else {
         std::cerr << "Unable to open file";
     }
-
-
+    
+    
     const char* command =
-             "python -c \""
+    "python -c \""
     "import matplotlib.pyplot as plt; "
     "import numpy as np; "
-    "data = np.loadtxt('coolrate.csv', delimiter=','); "  
+    "data = np.loadtxt('coolrate.csv', delimiter=','); "
     "x = data[:, 0]; "
     "y = data[:, 1]; "
-    "plt.plot(x, y, 'b-'); " 
+    "plt.plot(x, y, 'b-'); "
     "plt.xlabel('Cooling Rate'); "
     "plt.ylabel('Total Wire Length'); "
-   
+    
     "plt.title('Wire Length vs Temperature'); "
     "plt.grid(True); "
     "plt.show()\"";
     std::system(command);
-
-
+    
+    
 }
 int main(int argc, char* argv[]){
     
@@ -601,45 +542,20 @@ int main(int argc, char* argv[]){
     int intial_wire_length=get_tot_length();
     cout<<"\nTotal Wire Length is " <<intial_wire_length<<endl;// outputting the wire length
     
-    // for(int i=0; i< coolingrate.size();i++)
-    // {
     auto start = steady_clock::now();
     simulate_annealing(intial_wire_length, coolingrate[0]);
     auto end=steady_clock::now();
     int final_wire_lenght=get_tot_length();
     InitialGrid(1);
     cout<<"\nTotal Wire Length is " << final_wire_lenght<<endl;
-
+    
     totalgraphlength.push_back(final_wire_lenght);
     auto delta_time= duration_cast<milliseconds>(end-start);
     cout<<"Time Taken: "<<delta_time.count()/1000.0<<" seconds"<<endl;
- //   }
+    //   }
     plot_graphs();
-  //  plot_coolingrate();
-    //    cout<<endl<<"Cells and their net connections: \n";
-    //    for(int i=0;i<cell_cord.size();i++){
-    //        cout<<cell_cord[i].identifier<<"("<<cell_cord[i].xmargin<<","<<cell_cord[i].ymargin<<") connections: ";
-    //        for(int j=0;j<cell_cord[i].connections.size();j++){
-    //            cout<<cell_cord[i].connections[j]<<" , ";
-    //        }
-    //        cout<<endl;
-    //    }
-//    for (int i =0; i<CELLS[15].connections.size(); i++){
-//        
-//        cout<<CELLS[15].connections[i]<<endl; // hena masaln tal3ly 1,2,6,14 which are the indexes of the nets associated.
-//        
-//    }
-//    NETS[2].maxX=7;
-//    NETS[2].maxY=3;
-//    NETS[2].minY=1;
-//    NETS[2].minX=3;
-//    
-//    cout<<CELLS[15].connections[1];
-//    
-//    cout<<CELLS[15].ymargin;
-//    cout<<NETS[CELLS[15].connections[1]].cells[14];
-//    cout<<"da eh now=>"<<cost_new[0].tot_len<<endl;
-//    cout<<cell_cord.size()<<"Compared to"<<CELLS.size();
+    plot_coolingrate();
+    
     
 }
 //g++ main.cpp -O3 -lX11 -lpthread -std=c++17 -march=native -funroll-loops -ffast-math -o main
